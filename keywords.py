@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from nltk.util import ngrams
 import nltk
 import random
 # Make sure you have the NLTK stopwords downloaded
@@ -55,15 +56,36 @@ def extract_text_from_html(html_content):
     text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with a single space
     return text
 
+def is_valid(word):
+    stop_words = set(stopwords.words('english')) 
+    stop_words.add('lakhview')
+    return word not in stop_words and len(word) > 2 and word.isalpha()
+
 def clean_text(text):
-    stop_words = set(stopwords.words('english'))
     words = word_tokenize(text)
-    words = [word.lower() for word in words if word.isalpha() and word.lower() not in stop_words]
+    words = [word.lower() for word in words if is_valid(word.lower())]
     return words
+
+def get_ngrams(words, n):
+    return list(ngrams(words, n))
 
 def get_keywords_from_url(url):
     html_content = fetch_webpage(url)
     text = extract_text_from_html(html_content)
     cleaned_words = clean_text(text)
+    # Single words
     word_freq = Counter(cleaned_words)
-    return word_freq
+    
+    # Bigrams
+    bigrams = get_ngrams(cleaned_words, 2)
+    bigram_freq = Counter(bigrams)
+    
+    # Trigrams
+    trigrams = get_ngrams(cleaned_words, 3)
+    trigram_freq = Counter(trigrams)
+
+    return word_freq, bigram_freq, trigram_freq
+
+def format_ngrams(counter):
+    return [(' '.join(gram), freq) for gram, freq in counter.most_common()]
+
